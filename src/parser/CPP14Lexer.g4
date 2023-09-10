@@ -13,10 +13,19 @@ FloatingLiteral:
 	Fractionalconstant Exponentpart? Floatingsuffix?
 	| Digitsequence Exponentpart Floatingsuffix?;
 
+/* 
 StringLiteral:
 	Encodingprefix?
     (Rawstring
 	|'"' Schar* '"');
+*/
+
+// fix according to https://stackoverflow.com/questions/64108151/how-to-resolve-parsing-error-in-antlr-cpp14-grammar
+StringLiteral
+   : Encodingprefix? '"' Schar* '"'
+   | Encodingprefix? '"' Schar* '" GST_TIME_FORMAT'
+   | Encodingprefix? 'R' Rawstring
+ ;
 
 BooleanLiteral: False_ | True_;
 
@@ -382,7 +391,85 @@ fragment Schar:
 	| Escapesequence
 	| Universalcharactername;
 
-fragment Rawstring: 'R"' ( '\\' ["()] |~[\r\n (])*? '(' ~[)]*? ')'  ( '\\' ["()] | ~[\r\n "])*? '"';
+//fragment Rawstring: 'R"' ( '\\' ["()] |~[\r\n (])*? '(' ~[)]*? ')'  ( '\\' ["()] | ~[\r\n "])*? '"';
+
+// fix according to https://stackoverflow.com/questions/64108151/how-to-resolve-parsing-error-in-antlr-cpp14-grammar
+fragment Rawstring
+ : '"'              // Match Opening Double Quote
+   ( /* Handle Empty D_CHAR_SEQ without Predicates
+        This should also work
+        '(' .*? ')'
+      */
+     '(' ( ~')' | ')'+ ~'"' )* (')'+)
+
+   | D_CHAR_SEQ
+         /*  // Limit D_CHAR_SEQ to 16 characters
+            { ( ( getText().length() - ( getText().indexOf("\"") + 1 ) ) <= 16 ) }?
+         */
+     '('
+     /* From Spec :
+        Any member of the source character set, except
+        a right parenthesis ) followed by the initial D_CHAR_SEQUENCE
+        ( which may be empty ) followed by a double quote ".
+
+      - The following loop consumes characters until it matches the
+        terminating sequence of characters for the RAW STRING
+      - The options are mutually exclusive, so Only one will
+        ever execute in each loop pass
+      - Each Option will execute at least once.  The first option needs to
+        match the ')' character even if the D_CHAR_SEQ is empty. The second
+        option needs to match the closing \" to fall out of the loop. Each
+        option will only consume at most 1 character
+      */
+     (   //  Consume everthing but the Double Quote
+       ~'"'
+     |   //  If text Does Not End with closing Delimiter, consume the Double Quote
+       '"'
+       {
+            !getText().endsWith(
+                 ")"
+               + getText().substring( getText().indexOf( "\"" ) + 1
+                                    , getText().indexOf( "(" )
+                                    )
+               + '\"'
+             )
+       }?
+     )*
+   )
+   '"'              // Match Closing Double Quote
+
+   /*
+   // Strip Away R"D_CHAR_SEQ(...)D_CHAR_SEQ"
+   //  Send D_CHAR_SEQ <TAB> ... to Parser
+   {
+     setText( getText().substring( getText().indexOf("\"") + 1
+                                 , getText().indexOf("(")
+                                 )
+            + "\t"
+            + getText().substring( getText().indexOf("(") + 1
+                                 , getText().lastIndexOf(")")
+                                 )
+            );
+   }
+    */
+ ;
+
+fragment D_CHAR_SEQ     // Should be limited to 16 characters
+    : D_CHAR+
+ ;
+ fragment D_CHAR
+      /*  Any member of the basic source character set except
+          space, the left parenthesis (, the right parenthesis ),
+          the backslash \, and the control characters representing
+           horizontal tab, vertical tab, form feed, and newline.
+      */
+    : '\u0021'..'\u0023'
+    | '\u0025'..'\u0027'
+    | '\u002a'..'\u003f'
+    | '\u0041'..'\u005b'
+    | '\u005d'..'\u005f'
+    | '\u0061'..'\u007e'
+ ;
 
 UserDefinedIntegerLiteral:
 	DecimalLiteral Udsuffix

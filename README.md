@@ -24,11 +24,13 @@ IsPureSpecifierAllowed()
 
 Then rebuild the grammar. A explanation on how to build the grammar is contained in the next section.
 
-Insert a global function 'fn IsPureSpecifierAllowed() -> bool' somewhere inside cpp14parser.rs:
+Insert a global function 'fn IsPureSpecifierAllowed() -> bool' somewhere inside cpp14parser.rs (e.g. on line 500):
 
 ```
 fn IsPureSpecifierAllowed() -> bool
 {
+    panic!("Implement this!");
+
 	// try
 	// {
 	// 	auto x = this->getRuleContext(); // memberDeclarator
@@ -43,7 +45,7 @@ fn IsPureSpecifierAllowed() -> bool
 	// }
 	// return false;
 
-	return false;
+	//return false;
 }
 ```
 
@@ -62,6 +64,7 @@ First generate the lexer.
 ```
 cd resources/antlr4
 java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Lexer.g4 -visitor
+cd ../..
 ```
 
 Then generate the parser.
@@ -69,4 +72,15 @@ Then generate the parser.
 ```
 cd resources/antlr4
 java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Parser.g4 -visitor
+cd ../..
 ```
+
+Or do everything in one go:
+
+```
+cd resources/antlr4
+java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Lexer.g4 -visitor
+java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Parser.g4 -visitor
+cd ../..
+```
+

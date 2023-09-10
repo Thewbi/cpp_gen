@@ -496,10 +496,12 @@ use std::any::{Any,TypeId};
 	    static ref _shared_context_cache: Arc<PredictionContextCache> = Arc::new(PredictionContextCache::new());
 		static ref VOCABULARY: Box<dyn Vocabulary> = Box::new(VocabularyImpl::new(_LITERAL_NAMES.iter(), _SYMBOLIC_NAMES.iter(), None));
 	}
-
+	
 	fn IsPureSpecifierAllowed() -> bool
 	{
-		panic!("Implement this!");
+		//panic!("Implement this!");
+		return false;
+		//return true;
 	}
 
 type BaseParserType<'input, I> =
