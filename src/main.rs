@@ -32,7 +32,9 @@ fn main() {
     log::info!("*************************************************\n");
 
     let mut file_path: String = String::new();
-    file_path.push_str("test_resources/sample_files/cpp14/main.cpp");
+    //file_path.push_str("test_resources/sample_files/cpp14/main.cpp");
+    //file_path.push_str("test_resources/sample_files/cpp14/variables.cpp");
+    file_path.push_str("test_resources/sample_files/cpp14/test_f.cpp");
 
     let srcdir = PathBuf::from(&file_path);
     log::info!("absolute path: {:?}\n", fs::canonicalize(&srcdir));
