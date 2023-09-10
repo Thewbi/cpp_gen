@@ -379,55 +379,42 @@ impl<'input, Input:CharStream<From<'input> >> Actions<'input,BaseLexer<'input,CP
 							recog:&mut <Self as Deref>::Target
 			) -> bool {
 
-				//get_text
+				//println!("line_number: {}", recog.get_line());
 
-				return true;
+				let ttext = recog.get_text();
+				//println!("{:?}", ttext);
 
-			// 	match recog.get_input_stream() {
-			// 		None => { 
-			// 			return false; 
-			// 		}
-			// 		Some(x) => {
+				// !getText().endsWith(
+				// 	")"
+				//   + getText().substring( getText().indexOf( "\"" ) + 1
+				// 					   , getText().indexOf( "(" )
+				// 					   )
+				//   + '\"'
+				// )
 
-			// 			let input_stream = recog.get_input_stream().unwrap();
+				let mut start_index: i64 = -1;
+				match ttext.find("\"") {
+					None => { start_index = -1; }
+					Some(x) => { start_index = x as i64; }
+				}
+				start_index += 1;
 
-			// 			let mut buf = String::new();
-			// 			input_stream.consume();
+				let mut end_index: i64 = -1;
+				match ttext.find("(") {
+					None => { end_index = -1; }
+					Some(x) => { end_index = x as i64; }
+				}
 
-			// 			println!("{:?}", "a");
+				let slice = &ttext[start_index as usize..end_index as usize];
 
-			// 		}
-			// 	}
+				let mut substring: String = ")".to_owned();
+				substring.push_str(slice);
+				substring.push_str("\"");
 
-			// match pred_index {
-			// 		0=>{
-			// 			match _localctx {
-			// 				None => { 
-			// 					return false; 
-			// 				}, 
-			// 				Some(x) => { 
+				//println!("substring; {}", substring);
 
+				return !ttext.ends_with(&substring);
 
-
-			// 					let ttext = _localctx.unwrap().get_text();
-
-			// 			return false;
-
-			// 			            // !ttext.ends_with(
-			// 			            //      ")"
-			// 			            //    + ttext.substring( ttext.indexOf( "\"" ) + 1
-			// 			            //                         , ttext.indexOf( "(" )
-			// 			            //                         )
-			// 			            //    + '\"'
-			// 			            //  )
-			// 				 }
-			// 			  }
-
-						
-						       
-			// 		}
-			// 	_ => true
-			// }
 		}
 
 
