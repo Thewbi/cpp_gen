@@ -20,8 +20,6 @@ use antlr_rust::rule_context::{BaseRuleContext,EmptyCustomRuleContext,EmptyConte
 use antlr_rust::parser_rule_context::{ParserRuleContext,BaseParserRuleContext,cast};
 use antlr_rust::vocabulary::{Vocabulary,VocabularyImpl};
 
-use antlr_rust::tree::ParseTree;
-
 use antlr_rust::{lazy_static,Tid,TidAble,TidExt};
 
 use std::sync::Arc;
@@ -29,8 +27,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-
-use super::cpp14parser::OriginalNamespaceNameContextExt;
 
 
 	pub const IntegerLiteral:isize=1; 
@@ -378,43 +374,56 @@ impl<'input, Input:CharStream<From<'input> >> Actions<'input,BaseLexer<'input,CP
 		fn Rawstring_sempred(_localctx: Option<&LexerContext<'input>>, pred_index:isize,
 							recog:&mut <Self as Deref>::Target
 			) -> bool {
+			match pred_index {
+					0=>{
 
-				//println!("line_number: {}", recog.get_line());
+						            // !getText().endsWith(
+						            //     ")"
+						            //   + getText().substring( getText().indexOf( "\"" ) + 1
+						            //                        , getText().indexOf( "(" )
+						            //                        )
+						            //   + '\"'
+						            // )
 
-				let ttext = recog.get_text();
-				//println!("{:?}", ttext);
+									//println!("line_number: {}", recog.get_line());
 
-				// !getText().endsWith(
-				// 	")"
-				//   + getText().substring( getText().indexOf( "\"" ) + 1
-				// 					   , getText().indexOf( "(" )
-				// 					   )
-				//   + '\"'
-				// )
+										let ttext = recog.get_text();
+										//println!("{:?}", ttext);
 
-				let mut start_index: i64 = -1;
-				match ttext.find("\"") {
-					None => { start_index = -1; }
-					Some(x) => { start_index = x as i64; }
-				}
-				start_index += 1;
+										// !getText().endsWith(
+										// 	")"
+										//   + getText().substring( getText().indexOf( "\"" ) + 1
+										// 					   , getText().indexOf( "(" )
+										// 					   )
+										//   + '\"'
+										// )
 
-				let mut end_index: i64 = -1;
-				match ttext.find("(") {
-					None => { end_index = -1; }
-					Some(x) => { end_index = x as i64; }
-				}
+										let mut start_index: i64 = -1;
+										match ttext.find("\"") {
+											None => { start_index = -1; }
+											Some(x) => { start_index = x as i64; }
+										}
+										start_index += 1;
 
-				let slice = &ttext[start_index as usize..end_index as usize];
+										let mut end_index: i64 = -1;
+										match ttext.find("(") {
+											None => { end_index = -1; }
+											Some(x) => { end_index = x as i64; }
+										}
 
-				let mut substring: String = ")".to_owned();
-				substring.push_str(slice);
-				substring.push_str("\"");
+										let slice = &ttext[start_index as usize..end_index as usize];
 
-				//println!("substring; {}", substring);
+										let mut substring: String = ")".to_owned();
+										substring.push_str(slice);
+										substring.push_str("\"");
 
-				return !ttext.ends_with(&substring);
+										//println!("substring; {}", substring);
 
+										return !ttext.ends_with(&substring);
+						       
+					}
+				_ => true
+			}
 		}
 
 

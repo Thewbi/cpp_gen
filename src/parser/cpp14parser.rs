@@ -496,13 +496,27 @@ use std::any::{Any,TypeId};
 	    static ref _shared_context_cache: Arc<PredictionContextCache> = Arc::new(PredictionContextCache::new());
 		static ref VOCABULARY: Box<dyn Vocabulary> = Box::new(VocabularyImpl::new(_LITERAL_NAMES.iter(), _SYMBOLIC_NAMES.iter(), None));
 	}
-	
-	fn IsPureSpecifierAllowed() -> bool
-	{
-		//panic!("Implement this!");
-		return false;
-		//return true;
-	}
+
+fn IsPureSpecifierAllowed() -> bool
+{
+    //panic!("Implement this!");
+
+	// try
+	// {
+	// 	auto x = this->getRuleContext(); // memberDeclarator
+	// 	auto c = x->children[0]->children[0];
+	// 	auto c2 = c->children[0];
+	// 	auto p = c2->children[1];
+	// if (p == nullptr) return false;
+	// return typeid(*p) == typeid(CPP14Parser::ParametersAndQualifiersContext);
+	// }
+	// catch (...)
+	// {
+	// }
+	// return false;
+
+	return false;
+}
 
 type BaseParserType<'input, I> =
 	BaseParser<'input,CPP14ParserExt<'input>, I, CPP14ParserContextType , dyn CPP14ParserListener<'input> + 'input >;

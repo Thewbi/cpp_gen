@@ -29,7 +29,7 @@ Insert a global function 'fn IsPureSpecifierAllowed() -> bool' somewhere inside 
 ```
 fn IsPureSpecifierAllowed() -> bool
 {
-    panic!("Implement this!");
+    //panic!("Implement this!");
 
 	// try
 	// {
@@ -45,11 +45,11 @@ fn IsPureSpecifierAllowed() -> bool
 	// }
 	// return false;
 
-	//return false;
+	return false;
 }
 ```
 
-In cpp14parser.rs replace all occurences of 1isize with 1i64. Otherwise there will be shift with overflow errors.
+In cpp14parser.rs replace all occurences of 1usize with 1i64. Otherwise there will be shift with overflow errors.
 
 Then rebuild the application
 

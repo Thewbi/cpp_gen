@@ -426,13 +426,41 @@ fragment Rawstring
      |   //  If text Does Not End with closing Delimiter, consume the Double Quote
        '"'
        {
-            !getText().endsWith(
-                 ")"
-               + getText().substring( getText().indexOf( "\"" ) + 1
-                                    , getText().indexOf( "(" )
-                                    )
-               + '\"'
-             )
+            // !getText().endsWith(
+            //     ")"
+            //   + getText().substring( getText().indexOf( "\"" ) + 1
+            //                        , getText().indexOf( "(" )
+            //                        )
+            //   + '\"'
+            // )
+
+			//println!("line_number: {}", recog.get_line());
+
+				let ttext = recog.get_text();
+				//println!("{:?}", ttext);
+
+				let mut start_index: i64 = -1;
+				match ttext.find("\"") {
+					None => { start_index = -1; }
+					Some(x) => { start_index = x as i64; }
+				}
+				start_index += 1;
+
+				let mut end_index: i64 = -1;
+				match ttext.find("(") {
+					None => { end_index = -1; }
+					Some(x) => { end_index = x as i64; }
+				}
+
+				let slice = &ttext[start_index as usize..end_index as usize];
+
+				let mut substring: String = ")".to_owned();
+				substring.push_str(slice);
+				substring.push_str("\"");
+
+				//println!("substring; {}", substring);
+
+				return !ttext.ends_with(&substring);
        }?
      )*
    )
