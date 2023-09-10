@@ -60,13 +60,13 @@ cargo build
 First generate the lexer.
 
 ```
-cd resources\antlr4
+cd resources/antlr4
 java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Lexer.g4 -visitor
 ```
 
 Then generate the parser.
 
 ```
-cd resources\antlr4
+cd resources/antlr4
 java -jar antlr4-4.8-2-SNAPSHOT-complete.jar -Dlanguage=Rust -o ../../src/parser ../../src/parser/CPP14Parser.g4 -visitor
 ```

@@ -25,6 +25,8 @@ use antlr_rust::int_stream::EOF;
 use antlr_rust::vocabulary::{Vocabulary,VocabularyImpl};
 use antlr_rust::token_factory::{CommonTokenFactory,TokenFactory, TokenAware};
 use super::cpp14parserlistener::*;
+use super::cpp14parservisitor::*;
+
 use antlr_rust::lazy_static;
 use antlr_rust::{TidAble,TidExt};
 
@@ -495,6 +497,10 @@ use std::any::{Any,TypeId};
 		static ref VOCABULARY: Box<dyn Vocabulary> = Box::new(VocabularyImpl::new(_LITERAL_NAMES.iter(), _SYMBOLIC_NAMES.iter(), None));
 	}
 
+	fn IsPureSpecifierAllowed() -> bool
+	{
+		panic!("Implement this!");
+	}
 
 type BaseParserType<'input, I> =
 	BaseParser<'input,CPP14ParserExt<'input>, I, CPP14ParserContextType , dyn CPP14ParserListener<'input> + 'input >;
@@ -574,10 +580,20 @@ where
 /// Trait for monomorphized trait object that corresponds to the nodes of parse tree generated for CPP14Parser
 pub trait CPP14ParserContext<'input>:
 	for<'x> Listenable<dyn CPP14ParserListener<'input> + 'x > + 
+	for<'x> Visitable<dyn CPP14ParserVisitor<'input> + 'x > + 
 	ParserRuleContext<'input, TF=LocalTokenFactory<'input>, Ctx=CPP14ParserContextType>
 {}
 
 antlr_rust::coerce_from!{ 'input : CPP14ParserContext<'input> }
+
+impl<'input, 'x, T> VisitableDyn<T> for dyn CPP14ParserContext<'input> + 'input
+where
+    T: CPP14ParserVisitor<'input> + 'x,
+{
+    fn accept_dyn(&self, visitor: &mut T) {
+        self.accept(visitor as &mut (dyn CPP14ParserVisitor<'input> + 'x))
+    }
+}
 
 impl<'input> CPP14ParserContext<'input> for TerminalNode<'input,CPP14ParserContextType> {}
 impl<'input> CPP14ParserContext<'input> for ErrorNode<'input,CPP14ParserContextType> {}
@@ -652,50 +668,10 @@ impl<'input,I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'i
 	}
 }
 
-fn IsPureSpecifierAllowed_659() -> bool
-{
-	// try
-	// {
-	// 	auto x = this->getRuleContext(); // memberDeclarator
-	// 	auto c = x->children[0]->children[0];
-	// 	auto c2 = c->children[0];
-	// 	auto p = c2->children[1];
-	// if (p == nullptr) return false;
-	// return typeid(*p) == typeid(CPP14Parser::ParametersAndQualifiersContext);
-	// }
-	// catch (...)
-	// {
-	// }
-	// return false;
-
-	//return false;
-	panic!("fix me!");
-}
-
 impl<'input, I> CPP14Parser<'input, I, DefaultErrorStrategy<'input,CPP14ParserContextType>>
 where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
 {
-	//pub fn IsPureSpecifierAllowed_659(&mut self,) -> bool
-	// fn IsPureSpecifierAllowed_659() -> bool
-	// {
-	// 	// try
-	// 	// {
-	// 	// 	auto x = this->getRuleContext(); // memberDeclarator
-	// 	// 	auto c = x->children[0]->children[0];
-	// 	// 	auto c2 = c->children[0];
-	// 	// 	auto p = c2->children[1];
-	// 	// if (p == nullptr) return false;
-	// 	// return typeid(*p) == typeid(CPP14Parser::ParametersAndQualifiersContext);
-	// 	// }
-	// 	// catch (...)
-	// 	// {
-	// 	// }
-	// 	// return false;
-
-	// 	return false;
-	// }
-
 	fn nestedNameSpecifier_sempred(_localctx: Option<&NestedNameSpecifierContext<'input>>, pred_index:isize,
 						recog:&mut <Self as Deref>::Target
 		) -> bool {
@@ -765,15 +741,15 @@ where
 			_ => true
 		}
 	}
-	//fn memberDeclarator_sempred(&mut self, _localctx: Option<&MemberDeclaratorContext<'input>>, pred_index:isize, recog:&mut <Self as Deref>::Target
-	fn memberDeclarator_sempred(_localctx: Option<&MemberDeclaratorContext<'input>>, pred_index:isize, recog:&mut <Self as Deref>::Target
+	fn memberDeclarator_sempred(_localctx: Option<&MemberDeclaratorContext<'input>>, pred_index:isize,
+						recog:&mut <Self as Deref>::Target
 		) -> bool {
 		match pred_index {
 				9=>{
-					IsPureSpecifierAllowed_659()
+					 IsPureSpecifierAllowed() 
 				}
 				10=>{
-					IsPureSpecifierAllowed_659() 
+					 IsPureSpecifierAllowed() 
 				}
 			_ => true
 		}
@@ -796,10 +772,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Translation
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_translationUnit(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_translationUnit(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TranslationUnitContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_translationUnit(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TranslationUnitContextExt<'input>{
@@ -856,7 +839,6 @@ where
 			recog.base.set_state(383);
 			recog.err_handler.sync(&mut recog.base)?;
 			_la = recog.base.input.la(1);
-
 			if ((((_la - 10)) & !0x3f) == 0 && ((1i64 << (_la - 10)) & ((1i64 << (Alignas - 10)) | (1i64 << (Asm - 10)) | (1i64 << (Auto - 10)) | (1i64 << (Bool - 10)) | (1i64 << (Char - 10)) | (1i64 << (Char16 - 10)) | (1i64 << (Char32 - 10)) | (1i64 << (Class - 10)) | (1i64 << (Const - 10)) | (1i64 << (Constexpr - 10)) | (1i64 << (Decltype - 10)) | (1i64 << (Double - 10)) | (1i64 << (Enum - 10)) | (1i64 << (Explicit - 10)) | (1i64 << (Extern - 10)) | (1i64 << (Float - 10)) | (1i64 << (Friend - 10)))) != 0) || ((((_la - 44)) & !0x3f) == 0 && ((1i64 << (_la - 44)) & ((1i64 << (Inline - 44)) | (1i64 << (Int - 44)) | (1i64 << (Long - 44)) | (1i64 << (Mutable - 44)) | (1i64 << (Namespace - 44)) | (1i64 << (Operator - 44)) | (1i64 << (Register - 44)) | (1i64 << (Short - 44)) | (1i64 << (Signed - 44)) | (1i64 << (Static - 44)) | (1i64 << (Static_assert - 44)) | (1i64 << (Struct - 44)) | (1i64 << (Template - 44)) | (1i64 << (Thread_local - 44)) | (1i64 << (Typedef - 44)))) != 0) || ((((_la - 76)) & !0x3f) == 0 && ((1i64 << (_la - 76)) & ((1i64 << (Typename_ - 76)) | (1i64 << (Union - 76)) | (1i64 << (Unsigned - 76)) | (1i64 << (Using - 76)) | (1i64 << (Virtual - 76)) | (1i64 << (Void - 76)) | (1i64 << (Volatile - 76)) | (1i64 << (Wchar - 76)) | (1i64 << (LeftParen - 76)) | (1i64 << (LeftBracket - 76)) | (1i64 << (Star - 76)) | (1i64 << (And - 76)) | (1i64 << (Tilde - 76)))) != 0) || ((((_la - 118)) & !0x3f) == 0 && ((1i64 << (_la - 118)) & ((1i64 << (AndAnd - 118)) | (1i64 << (Doublecolon - 118)) | (1i64 << (Semi - 118)) | (1i64 << (Ellipsis - 118)) | (1i64 << (Identifier - 118)))) != 0) {
 				{
 				/*InvokeRule declarationseq*/
@@ -903,10 +885,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PrimaryExpr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_primaryExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_primaryExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PrimaryExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_primaryExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PrimaryExpressionContextExt<'input>{
@@ -1101,10 +1090,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for IdExpressio
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_idExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_idExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for IdExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_idExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for IdExpressionContextExt<'input>{
@@ -1212,10 +1208,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Unqualified
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_unqualifiedId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_unqualifiedId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for UnqualifiedIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_unqualifiedId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for UnqualifiedIdContextExt<'input>{
@@ -1412,10 +1415,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for QualifiedId
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_qualifiedId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_qualifiedId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for QualifiedIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_qualifiedId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for QualifiedIdContextExt<'input>{
@@ -1525,10 +1535,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NestedNameS
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_nestedNameSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_nestedNameSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NestedNameSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_nestedNameSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NestedNameSpecifierContextExt<'input>{
@@ -1745,10 +1762,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LambdaExpre
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_lambdaExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_lambdaExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LambdaExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_lambdaExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LambdaExpressionContextExt<'input>{
@@ -1857,10 +1881,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LambdaIntro
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_lambdaIntroducer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_lambdaIntroducer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LambdaIntroducerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_lambdaIntroducer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LambdaIntroducerContextExt<'input>{
@@ -1971,10 +2002,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LambdaCaptu
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_lambdaCapture(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_lambdaCapture(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LambdaCaptureContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_lambdaCapture(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LambdaCaptureContextExt<'input>{
@@ -2103,10 +2141,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CaptureDefa
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_captureDefault(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_captureDefault(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CaptureDefaultContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_captureDefault(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CaptureDefaultContextExt<'input>{
@@ -2207,10 +2252,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CaptureList
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_captureList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_captureList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CaptureListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_captureList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CaptureListContextExt<'input>{
@@ -2344,10 +2396,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CaptureCont
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_capture(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_capture(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CaptureContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_capture(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CaptureContextExt<'input>{
@@ -2455,10 +2514,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleCaptu
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleCapture(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleCapture(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleCaptureContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleCapture(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleCaptureContextExt<'input>{
@@ -2587,10 +2653,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Initcapture
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initcapture(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initcapture(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitcaptureContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initcapture(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitcaptureContextExt<'input>{
@@ -2701,10 +2774,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LambdaDecla
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_lambdaDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_lambdaDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LambdaDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_lambdaDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LambdaDeclaratorContextExt<'input>{
@@ -2876,10 +2956,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PostfixExpr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_postfixExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_postfixExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PostfixExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_postfixExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PostfixExpressionContextExt<'input>{
@@ -3419,10 +3506,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeIdOfThe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeIdOfTheTypeId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeIdOfTheTypeId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeIdOfTheTypeIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeIdOfTheTypeId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeIdOfTheTypeIdContextExt<'input>{
@@ -3509,10 +3603,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExpressionL
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_expressionList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_expressionList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExpressionListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_expressionList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExpressionListContextExt<'input>{
@@ -3598,10 +3699,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PseudoDestr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pseudoDestructorName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pseudoDestructorName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PseudoDestructorNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pseudoDestructorName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PseudoDestructorNameContextExt<'input>{
@@ -3797,10 +3905,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for UnaryExpres
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_unaryExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_unaryExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for UnaryExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_unaryExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for UnaryExpressionContextExt<'input>{
@@ -4107,10 +4222,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for UnaryOperat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_unaryOperator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_unaryOperator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for UnaryOperatorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_unaryOperator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for UnaryOperatorContextExt<'input>{
@@ -4236,10 +4358,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NewExpressi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_newExpression_(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_newExpression_(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NewExpression_Context<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_newExpression_(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NewExpression_ContextExt<'input>{
@@ -4424,10 +4553,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NewPlacemen
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_newPlacement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_newPlacement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NewPlacementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_newPlacement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NewPlacementContextExt<'input>{
@@ -4529,10 +4665,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NewTypeIdCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_newTypeId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_newTypeId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NewTypeIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_newTypeId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NewTypeIdContextExt<'input>{
@@ -4635,10 +4778,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NewDeclarat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_newDeclarator_(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_newDeclarator_(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NewDeclarator_Context<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_newDeclarator_(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NewDeclarator_ContextExt<'input>{
@@ -4765,10 +4915,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoPointerNe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noPointerNewDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noPointerNewDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoPointerNewDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noPointerNewDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoPointerNewDeclaratorContextExt<'input>{
@@ -4953,10 +5110,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NewInitiali
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_newInitializer_(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_newInitializer_(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NewInitializer_Context<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_newInitializer_(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NewInitializer_ContextExt<'input>{
@@ -5091,10 +5255,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DeleteExpre
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_deleteExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_deleteExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeleteExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_deleteExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeleteExpressionContextExt<'input>{
@@ -5231,10 +5402,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoExceptExp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noExceptExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noExceptExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoExceptExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noExceptExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoExceptExpressionContextExt<'input>{
@@ -5344,10 +5522,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CastExpress
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_castExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_castExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CastExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_castExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CastExpressionContextExt<'input>{
@@ -5478,10 +5663,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PointerMemb
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pointerMemberExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pointerMemberExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PointerMemberExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pointerMemberExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PointerMemberExpressionContextExt<'input>{
@@ -5616,10 +5808,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Multiplicat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_multiplicativeExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_multiplicativeExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MultiplicativeExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_multiplicativeExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MultiplicativeExpressionContextExt<'input>{
@@ -5763,10 +5962,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AdditiveExp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_additiveExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_additiveExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AdditiveExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_additiveExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AdditiveExpressionContextExt<'input>{
@@ -5901,10 +6107,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ShiftExpres
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_shiftExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_shiftExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ShiftExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_shiftExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ShiftExpressionContextExt<'input>{
@@ -6022,10 +6235,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ShiftOperat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_shiftOperator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_shiftOperator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ShiftOperatorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_shiftOperator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ShiftOperatorContextExt<'input>{
@@ -6151,10 +6371,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for RelationalE
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_relationalExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_relationalExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for RelationalExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_relationalExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for RelationalExpressionContextExt<'input>{
@@ -6310,10 +6537,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EqualityExp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_equalityExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_equalityExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EqualityExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_equalityExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EqualityExpressionContextExt<'input>{
@@ -6448,10 +6682,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AndExpressi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_andExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_andExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AndExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_andExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AndExpressionContextExt<'input>{
@@ -6569,10 +6810,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExclusiveOr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_exclusiveOrExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_exclusiveOrExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExclusiveOrExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_exclusiveOrExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExclusiveOrExpressionContextExt<'input>{
@@ -6690,10 +6938,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for InclusiveOr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_inclusiveOrExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_inclusiveOrExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InclusiveOrExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_inclusiveOrExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InclusiveOrExpressionContextExt<'input>{
@@ -6811,10 +7066,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LogicalAndE
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_logicalAndExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_logicalAndExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LogicalAndExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_logicalAndExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LogicalAndExpressionContextExt<'input>{
@@ -6932,10 +7194,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LogicalOrEx
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_logicalOrExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_logicalOrExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LogicalOrExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_logicalOrExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LogicalOrExpressionContextExt<'input>{
@@ -7053,10 +7322,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Conditional
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_conditionalExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_conditionalExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConditionalExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_conditionalExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConditionalExpressionContextExt<'input>{
@@ -7181,10 +7457,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AssignmentE
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_assignmentExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_assignmentExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AssignmentExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_assignmentExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AssignmentExpressionContextExt<'input>{
@@ -7320,10 +7603,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AssignmentO
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_assignmentOperator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_assignmentOperator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AssignmentOperatorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_assignmentOperator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AssignmentOperatorContextExt<'input>{
@@ -7469,10 +7759,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExpressionC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_expression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_expression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_expression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExpressionContextExt<'input>{
@@ -7590,10 +7887,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ConstantExp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_constantExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_constantExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConstantExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_constantExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConstantExpressionContextExt<'input>{
@@ -7679,10 +7983,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for StatementCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_statement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_statement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for StatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_statement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for StatementContextExt<'input>{
@@ -7904,10 +8215,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LabeledStat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_labeledStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_labeledStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LabeledStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_labeledStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LabeledStatementContextExt<'input>{
@@ -8071,10 +8389,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExpressionS
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_expressionStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_expressionStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExpressionStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_expressionStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExpressionStatementContextExt<'input>{
@@ -8177,10 +8502,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CompoundSta
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_compoundStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_compoundStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CompoundStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_compoundStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CompoundStatementContextExt<'input>{
@@ -8291,10 +8623,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for StatementSe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_statementSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_statementSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for StatementSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_statementSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for StatementSeqContextExt<'input>{
@@ -8397,10 +8736,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SelectionSt
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_selectionStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_selectionStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SelectionStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_selectionStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SelectionStatementContextExt<'input>{
@@ -8581,10 +8927,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ConditionCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_condition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_condition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConditionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_condition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConditionContextExt<'input>{
@@ -8754,10 +9107,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for IterationSt
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_iterationStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_iterationStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for IterationStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_iterationStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for IterationStatementContextExt<'input>{
@@ -9025,10 +9385,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ForInitStat
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_forInitStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_forInitStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ForInitStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_forInitStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ForInitStatementContextExt<'input>{
@@ -9136,10 +9503,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ForRangeDec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_forRangeDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_forRangeDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ForRangeDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_forRangeDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ForRangeDeclarationContextExt<'input>{
@@ -9248,10 +9622,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ForRangeIni
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_forRangeInitializer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_forRangeInitializer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ForRangeInitializerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_forRangeInitializer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ForRangeInitializerContextExt<'input>{
@@ -9367,10 +9748,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for JumpStateme
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_jumpStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_jumpStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for JumpStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_jumpStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for JumpStatementContextExt<'input>{
@@ -9568,10 +9956,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Declaration
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declarationStatement(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declarationStatement(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclarationStatementContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declarationStatement(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclarationStatementContextExt<'input>{
@@ -9657,10 +10052,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Declaration
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declarationseq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declarationseq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclarationseqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declarationseq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclarationseqContextExt<'input>{
@@ -9763,10 +10165,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Declaration
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclarationContextExt<'input>{
@@ -9972,10 +10381,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BlockDeclar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_blockDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_blockDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BlockDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_blockDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BlockDeclarationContextExt<'input>{
@@ -10167,10 +10583,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AliasDeclar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_aliasDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_aliasDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AliasDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_aliasDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AliasDeclarationContextExt<'input>{
@@ -10304,10 +10727,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleDecla
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleDeclarationContextExt<'input>{
@@ -10477,10 +10907,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for StaticAsser
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_staticAssertDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_staticAssertDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for StaticAssertDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_staticAssertDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for StaticAssertDeclarationContextExt<'input>{
@@ -10614,10 +11051,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EmptyDeclar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_emptyDeclaration_(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_emptyDeclaration_(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EmptyDeclaration_Context<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_emptyDeclaration_(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EmptyDeclaration_ContextExt<'input>{
@@ -10704,10 +11148,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeDeclarationContextExt<'input>{
@@ -10801,10 +11252,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DeclSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclSpecifierContextExt<'input>{
@@ -10979,10 +11437,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DeclSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declSpecifierSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declSpecifierSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclSpecifierSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declSpecifierSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclSpecifierSeqContextExt<'input>{
@@ -11107,10 +11572,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for StorageClas
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_storageClassSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_storageClassSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for StorageClassSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_storageClassSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for StorageClassSpecifierContextExt<'input>{
@@ -11226,10 +11698,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for FunctionSpe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_functionSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_functionSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for FunctionSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_functionSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for FunctionSpecifierContextExt<'input>{
@@ -11335,10 +11814,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypedefName
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typedefName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typedefName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypedefNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typedefName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypedefNameContextExt<'input>{
@@ -11425,10 +11911,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeSpecifierContextExt<'input>{
@@ -11550,10 +12043,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TrailingTyp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_trailingTypeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_trailingTypeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TrailingTypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_trailingTypeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TrailingTypeSpecifierContextExt<'input>{
@@ -11694,10 +12194,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeSpecifierSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeSpecifierSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeSpecifierSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeSpecifierSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeSpecifierSeqContextExt<'input>{
@@ -11822,10 +12329,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TrailingTyp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_trailingTypeSpecifierSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_trailingTypeSpecifierSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TrailingTypeSpecifierSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_trailingTypeSpecifierSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TrailingTypeSpecifierSeqContextExt<'input>{
@@ -11950,10 +12464,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleTypeL
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleTypeLengthModifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleTypeLengthModifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleTypeLengthModifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleTypeLengthModifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleTypeLengthModifierContextExt<'input>{
@@ -12054,10 +12575,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleTypeS
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleTypeSignednessModifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleTypeSignednessModifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleTypeSignednessModifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleTypeSignednessModifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleTypeSignednessModifierContextExt<'input>{
@@ -12158,10 +12686,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleTypeS
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleTypeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleTypeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleTypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleTypeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleTypeSpecifierContextExt<'input>{
@@ -12532,10 +13067,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TheTypeName
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_theTypeName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_theTypeName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TheTypeNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_theTypeName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TheTypeNameContextExt<'input>{
@@ -12671,10 +13213,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DecltypeSpe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_decltypeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_decltypeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DecltypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_decltypeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DecltypeSpecifierContextExt<'input>{
@@ -12807,10 +13356,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ElaboratedT
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_elaboratedTypeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_elaboratedTypeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ElaboratedTypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_elaboratedTypeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ElaboratedTypeSpecifierContextExt<'input>{
@@ -13030,10 +13586,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumNameCon
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumNameContextExt<'input>{
@@ -13120,10 +13683,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumSpecifierContextExt<'input>{
@@ -13257,10 +13827,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumHeadCon
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumHead(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumHead(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumHeadContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumHead(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumHeadContextExt<'input>{
@@ -13410,10 +13987,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for OpaqueEnumD
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_opaqueEnumDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_opaqueEnumDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for OpaqueEnumDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_opaqueEnumDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for OpaqueEnumDeclarationContextExt<'input>{
@@ -13546,10 +14130,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumkeyCont
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumkey(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumkey(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumkeyContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumkey(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumkeyContextExt<'input>{
@@ -13666,10 +14257,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumbaseCon
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumbase(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumbase(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumbaseContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumbase(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumbaseContextExt<'input>{
@@ -13763,10 +14361,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumeratorL
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumeratorList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumeratorList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumeratorListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumeratorList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumeratorListContextExt<'input>{
@@ -13886,10 +14491,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumeratorD
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumeratorDefinition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumeratorDefinition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumeratorDefinitionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumeratorDefinition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumeratorDefinitionContextExt<'input>{
@@ -13999,10 +14611,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for EnumeratorC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_enumerator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_enumerator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for EnumeratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_enumerator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for EnumeratorContextExt<'input>{
@@ -14089,10 +14708,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NamespaceNa
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_namespaceName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_namespaceName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NamespaceNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_namespaceName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NamespaceNameContextExt<'input>{
@@ -14200,10 +14826,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for OriginalNam
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_originalNamespaceName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_originalNamespaceName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for OriginalNamespaceNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_originalNamespaceName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for OriginalNamespaceNameContextExt<'input>{
@@ -14291,10 +14924,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NamespaceDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_namespaceDefinition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_namespaceDefinition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NamespaceDefinitionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_namespaceDefinition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NamespaceDefinitionContextExt<'input>{
@@ -14462,10 +15102,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NamespaceAl
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_namespaceAlias(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_namespaceAlias(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NamespaceAliasContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_namespaceAlias(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NamespaceAliasContextExt<'input>{
@@ -14552,10 +15199,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NamespaceAl
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_namespaceAliasDefinition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_namespaceAliasDefinition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NamespaceAliasDefinitionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_namespaceAliasDefinition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NamespaceAliasDefinitionContextExt<'input>{
@@ -14673,10 +15327,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Qualifiedna
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_qualifiednamespacespecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_qualifiednamespacespecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for QualifiednamespacespecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_qualifiednamespacespecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for QualifiednamespacespecifierContextExt<'input>{
@@ -14779,10 +15440,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for UsingDeclar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_usingDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_usingDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for UsingDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_usingDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for UsingDeclarationContextExt<'input>{
@@ -14931,10 +15599,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for UsingDirect
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_usingDirective(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_usingDirective(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for UsingDirectiveContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_usingDirective(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for UsingDirectiveContextExt<'input>{
@@ -15077,10 +15752,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AsmDefiniti
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_asmDefinition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_asmDefinition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AsmDefinitionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_asmDefinition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AsmDefinitionContextExt<'input>{
@@ -15199,10 +15881,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LinkageSpec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_linkageSpecification(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_linkageSpecification(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LinkageSpecificationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_linkageSpecification(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LinkageSpecificationContextExt<'input>{
@@ -15359,10 +16048,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeSp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeSpecifierSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeSpecifierSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeSpecifierSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeSpecifierSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeSpecifierSeqContextExt<'input>{
@@ -15470,10 +16166,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeSp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeSpecifierContextExt<'input>{
@@ -15622,10 +16325,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Alignmentsp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_alignmentspecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_alignmentspecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AlignmentspecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_alignmentspecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AlignmentspecifierContextExt<'input>{
@@ -15774,10 +16484,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeLi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeListContextExt<'input>{
@@ -15911,10 +16628,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attribute(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attribute(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attribute(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeContextExt<'input>{
@@ -16042,10 +16766,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeNa
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeNamespace(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeNamespace(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeNamespaceContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeNamespace(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeNamespaceContextExt<'input>{
@@ -16132,10 +16863,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AttributeAr
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_attributeArgumentClause(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_attributeArgumentClause(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AttributeArgumentClauseContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_attributeArgumentClause(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AttributeArgumentClauseContextExt<'input>{
@@ -16246,10 +16984,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BalancedTok
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_balancedTokenSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_balancedTokenSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BalancedTokenSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_balancedTokenSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BalancedTokenSeqContextExt<'input>{
@@ -16352,10 +17097,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Balancedtok
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_balancedtoken(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_balancedtoken(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BalancedtokenContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_balancedtoken(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BalancedtokenContextExt<'input>{
@@ -16605,10 +17357,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for InitDeclara
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initDeclaratorList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initDeclaratorList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitDeclaratorListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initDeclaratorList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitDeclaratorListContextExt<'input>{
@@ -16726,10 +17485,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for InitDeclara
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitDeclaratorContextExt<'input>{
@@ -16831,10 +17597,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DeclaratorC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclaratorContextExt<'input>{
@@ -16956,10 +17729,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PointerDecl
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pointerDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pointerDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PointerDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pointerDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PointerDeclaratorContextExt<'input>{
@@ -17091,10 +17871,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoPointerDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noPointerDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noPointerDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoPointerDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noPointerDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoPointerDeclaratorContextExt<'input>{
@@ -17344,10 +18131,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ParametersA
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_parametersAndQualifiers(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_parametersAndQualifiers(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ParametersAndQualifiersContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_parametersAndQualifiers(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ParametersAndQualifiersContextExt<'input>{
@@ -17526,10 +18320,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TrailingRet
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_trailingReturnType(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_trailingReturnType(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TrailingReturnTypeContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_trailingReturnType(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TrailingReturnTypeContextExt<'input>{
@@ -17640,10 +18441,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PointerOper
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pointerOperator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pointerOperator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PointerOperatorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pointerOperator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PointerOperatorContextExt<'input>{
@@ -17832,10 +18640,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Cvqualifier
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_cvqualifierseq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_cvqualifierseq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CvqualifierseqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_cvqualifierseq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CvqualifierseqContextExt<'input>{
@@ -17943,10 +18758,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for CvQualifier
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_cvQualifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_cvQualifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for CvQualifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_cvQualifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for CvQualifierContextExt<'input>{
@@ -18047,10 +18869,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Refqualifie
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_refqualifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_refqualifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for RefqualifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_refqualifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for RefqualifierContextExt<'input>{
@@ -18151,10 +18980,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Declaratori
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_declaratorid(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_declaratorid(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DeclaratoridContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_declaratorid(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DeclaratoridContextExt<'input>{
@@ -18257,10 +19093,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TheTypeIdCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_theTypeId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_theTypeId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TheTypeIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_theTypeId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TheTypeIdContextExt<'input>{
@@ -18363,10 +19206,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AbstractDec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_abstractDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_abstractDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AbstractDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_abstractDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AbstractDeclaratorContextExt<'input>{
@@ -18512,10 +19362,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PointerAbst
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pointerAbstractDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pointerAbstractDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PointerAbstractDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pointerAbstractDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PointerAbstractDeclaratorContextExt<'input>{
@@ -18661,10 +19518,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoPointerAb
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noPointerAbstractDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noPointerAbstractDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoPointerAbstractDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noPointerAbstractDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoPointerAbstractDeclaratorContextExt<'input>{
@@ -18937,10 +19801,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AbstractPac
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_abstractPackDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_abstractPackDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AbstractPackDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_abstractPackDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AbstractPackDeclaratorContextExt<'input>{
@@ -19049,10 +19920,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoPointerAb
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noPointerAbstractPackDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noPointerAbstractPackDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoPointerAbstractPackDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noPointerAbstractPackDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoPointerAbstractPackDeclaratorContextExt<'input>{
@@ -19251,10 +20129,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ParameterDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_parameterDeclarationClause(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_parameterDeclarationClause(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ParameterDeclarationClauseContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_parameterDeclarationClause(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ParameterDeclarationClauseContextExt<'input>{
@@ -19373,10 +20258,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ParameterDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_parameterDeclarationList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_parameterDeclarationList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ParameterDeclarationListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_parameterDeclarationList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ParameterDeclarationListContextExt<'input>{
@@ -19496,10 +20388,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ParameterDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_parameterDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_parameterDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ParameterDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_parameterDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ParameterDeclarationContextExt<'input>{
@@ -19663,10 +20562,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for FunctionDef
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_functionDefinition(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_functionDefinition(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for FunctionDefinitionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_functionDefinition(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for FunctionDefinitionContextExt<'input>{
@@ -19807,10 +20713,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for FunctionBod
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_functionBody(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_functionBody(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for FunctionBodyContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_functionBody(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for FunctionBodyContextExt<'input>{
@@ -19981,10 +20894,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Initializer
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initializer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initializer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitializerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initializer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitializerContextExt<'input>{
@@ -20110,10 +21030,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BraceOrEqua
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_braceOrEqualInitializer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_braceOrEqualInitializer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BraceOrEqualInitializerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_braceOrEqualInitializer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BraceOrEqualInitializerContextExt<'input>{
@@ -20231,10 +21158,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Initializer
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initializerClause(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initializerClause(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitializerClauseContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initializerClause(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitializerClauseContextExt<'input>{
@@ -20350,10 +21284,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Initializer
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_initializerList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_initializerList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for InitializerListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_initializerList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for InitializerListContextExt<'input>{
@@ -20505,10 +21446,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BracedInitL
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_bracedInitList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_bracedInitList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BracedInitListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_bracedInitList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BracedInitListContextExt<'input>{
@@ -20635,10 +21583,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassNameCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_className(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_className(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_className(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassNameContextExt<'input>{
@@ -20747,10 +21702,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassSpecif
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassSpecifierContextExt<'input>{
@@ -20868,10 +21830,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassHeadCo
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classHead(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classHead(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassHeadContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classHead(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassHeadContextExt<'input>{
@@ -21079,10 +22048,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassHeadNa
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classHeadName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classHeadName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassHeadNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classHeadName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassHeadNameContextExt<'input>{
@@ -21185,10 +22161,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassVirtSp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classVirtSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classVirtSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassVirtSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classVirtSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassVirtSpecifierContextExt<'input>{
@@ -21275,10 +22258,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassKeyCon
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classKey(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classKey(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassKeyContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classKey(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassKeyContextExt<'input>{
@@ -21379,10 +22369,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for MemberSpeci
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memberSpecification(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memberSpecification(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemberSpecificationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memberSpecification(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemberSpecificationContextExt<'input>{
@@ -21528,10 +22525,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Memberdecla
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memberdeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memberdeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemberdeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memberdeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemberdeclarationContextExt<'input>{
@@ -21760,10 +22764,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for MemberDecla
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memberDeclaratorList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memberDeclaratorList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemberDeclaratorListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memberDeclaratorList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemberDeclaratorListContextExt<'input>{
@@ -21881,10 +22892,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for MemberDecla
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memberDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memberDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemberDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memberDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemberDeclaratorContextExt<'input>{
@@ -21945,25 +22963,6 @@ where
     I: TokenStream<'input, TF = LocalTokenFactory<'input> > + TidAble<'input>,
     H: ErrorStrategy<'input,BaseParserType<'input,I>>
 {
-	// pub fn IsPureSpecifierAllowed(&mut self,) -> bool
-	// {
-	// 	// try
-	// 	// {
-	// 	// 	auto x = this->getRuleContext(); // memberDeclarator
-	// 	// 	auto c = x->children[0]->children[0];
-	// 	// 	auto c2 = c->children[0];
-	// 	// 	auto p = c2->children[1];
-	// 	// if (p == nullptr) return false;
-	// 	// return typeid(*p) == typeid(CPP14Parser::ParametersAndQualifiersContext);
-	// 	// }
-	// 	// catch (...)
-	// 	// {
-	// 	// }
-	// 	// return false;
-
-	// 	return false;
-	// }
-
 	pub fn memberDeclarator(&mut self,)
 	-> Result<Rc<MemberDeclaratorContextAll<'input>>,ANTLRError> {
 		let mut recog = self;
@@ -22000,9 +22999,8 @@ where
 						2 =>{
 							{
 							recog.base.set_state(1727);
-							//if !({ self.IsPureSpecifierAllowed() }) {
-							if !({ IsPureSpecifierAllowed_659() }) {
-								Err(FailedPredicateError::new(&mut recog.base, Some(" self.IsPureSpecifierAllowed() ".to_owned()), None))?;
+							if !({ IsPureSpecifierAllowed() }) {
+								Err(FailedPredicateError::new(&mut recog.base, Some(" IsPureSpecifierAllowed() ".to_owned()), None))?;
 							}
 							/*InvokeRule pureSpecifier*/
 							recog.base.set_state(1728);
@@ -22014,9 +23012,8 @@ where
 						3 =>{
 							{
 							recog.base.set_state(1729);
-							//if !({ self.IsPureSpecifierAllowed() }) {
-							if !({ IsPureSpecifierAllowed_659() }) {
-								Err(FailedPredicateError::new(&mut recog.base, Some(" self.IsPureSpecifierAllowed() ".to_owned()), None))?;
+							if !({ IsPureSpecifierAllowed() }) {
+								Err(FailedPredicateError::new(&mut recog.base, Some(" IsPureSpecifierAllowed() ".to_owned()), None))?;
 							}
 							/*InvokeRule virtualSpecifierSeq*/
 							recog.base.set_state(1730);
@@ -22126,10 +23123,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for VirtualSpec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_virtualSpecifierSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_virtualSpecifierSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for VirtualSpecifierSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_virtualSpecifierSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for VirtualSpecifierSeqContextExt<'input>{
@@ -22232,10 +23236,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for VirtualSpec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_virtualSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_virtualSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for VirtualSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_virtualSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for VirtualSpecifierContextExt<'input>{
@@ -22336,10 +23347,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for PureSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_pureSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_pureSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for PureSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_pureSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for PureSpecifierContextExt<'input>{
@@ -22434,10 +23452,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BaseClauseC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_baseClause(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_baseClause(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BaseClauseContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_baseClause(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BaseClauseContextExt<'input>{
@@ -22531,10 +23556,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BaseSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_baseSpecifierList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_baseSpecifierList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BaseSpecifierListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_baseSpecifierList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BaseSpecifierListContextExt<'input>{
@@ -22683,10 +23715,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BaseSpecifi
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_baseSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_baseSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BaseSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_baseSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BaseSpecifierContextExt<'input>{
@@ -22857,10 +23896,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ClassOrDecl
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_classOrDeclType(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_classOrDeclType(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ClassOrDeclTypeContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_classOrDeclType(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ClassOrDeclTypeContextExt<'input>{
@@ -22985,10 +24031,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for BaseTypeSpe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_baseTypeSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_baseTypeSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for BaseTypeSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_baseTypeSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for BaseTypeSpecifierContextExt<'input>{
@@ -23074,10 +24127,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for AccessSpeci
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_accessSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_accessSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for AccessSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_accessSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for AccessSpecifierContextExt<'input>{
@@ -23183,10 +24243,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ConversionF
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_conversionFunctionId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_conversionFunctionId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConversionFunctionIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_conversionFunctionId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConversionFunctionIdContextExt<'input>{
@@ -23280,10 +24347,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ConversionT
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_conversionTypeId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_conversionTypeId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConversionTypeIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_conversionTypeId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConversionTypeIdContextExt<'input>{
@@ -23386,10 +24460,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ConversionD
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_conversionDeclarator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_conversionDeclarator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConversionDeclaratorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_conversionDeclarator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConversionDeclaratorContextExt<'input>{
@@ -23492,10 +24573,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Constructor
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_constructorInitializer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_constructorInitializer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ConstructorInitializerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_constructorInitializer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ConstructorInitializerContextExt<'input>{
@@ -23589,10 +24677,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for MemInitiali
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memInitializerList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memInitializerList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemInitializerListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memInitializerList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemInitializerListContextExt<'input>{
@@ -23741,10 +24836,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for MemInitiali
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_memInitializer(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_memInitializer(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MemInitializerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_memInitializer(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MemInitializerContextExt<'input>{
@@ -23886,10 +24988,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Meminitiali
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_meminitializerid(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_meminitializerid(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for MeminitializeridContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_meminitializerid(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for MeminitializeridContextExt<'input>{
@@ -23998,10 +25107,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for OperatorFun
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_operatorFunctionId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_operatorFunctionId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for OperatorFunctionIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_operatorFunctionId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for OperatorFunctionIdContextExt<'input>{
@@ -24095,10 +25211,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LiteralOper
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_literalOperatorId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_literalOperatorId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LiteralOperatorIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_literalOperatorId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LiteralOperatorIdContextExt<'input>{
@@ -24226,10 +25349,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplateDec
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateDeclarationContextExt<'input>{
@@ -24346,10 +25476,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for Templatepar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateparameterList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateparameterList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateparameterListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateparameterList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateparameterListContextExt<'input>{
@@ -24467,10 +25604,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplatePar
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateParameter(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateParameter(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateParameterContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateParameter(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateParameterContextExt<'input>{
@@ -24578,10 +25722,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeParamet
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeParameter(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeParameter(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeParameterContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeParameter(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeParameterContextExt<'input>{
@@ -24806,10 +25957,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for SimpleTempl
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_simpleTemplateId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_simpleTemplateId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for SimpleTemplateIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_simpleTemplateId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for SimpleTemplateIdContextExt<'input>{
@@ -24927,10 +26085,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplateIdC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateId(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateId(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateIdContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateId(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateIdContextExt<'input>{
@@ -25094,10 +26259,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplateNam
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateName(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateName(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateNameContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateName(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateNameContextExt<'input>{
@@ -25184,10 +26356,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplateArg
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateArgumentList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateArgumentList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateArgumentListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateArgumentList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateArgumentListContextExt<'input>{
@@ -25336,10 +26515,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TemplateArg
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_templateArgument(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_templateArgument(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TemplateArgumentContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_templateArgument(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TemplateArgumentContextExt<'input>{
@@ -25461,10 +26647,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeNameSpe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeNameSpecifier(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeNameSpecifier(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeNameSpecifierContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeNameSpecifier(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeNameSpecifierContextExt<'input>{
@@ -25605,10 +26798,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExplicitIns
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_explicitInstantiation(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_explicitInstantiation(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExplicitInstantiationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_explicitInstantiation(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExplicitInstantiationContextExt<'input>{
@@ -25719,10 +26919,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExplicitSpe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_explicitSpecialization(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_explicitSpecialization(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExplicitSpecializationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_explicitSpecialization(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExplicitSpecializationContextExt<'input>{
@@ -25832,10 +27039,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TryBlockCon
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_tryBlock(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_tryBlock(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TryBlockContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_tryBlock(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TryBlockContextExt<'input>{
@@ -25936,10 +27150,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for FunctionTry
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_functionTryBlock(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_functionTryBlock(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for FunctionTryBlockContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_functionTryBlock(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for FunctionTryBlockContextExt<'input>{
@@ -26056,10 +27277,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for HandlerSeqC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_handlerSeq(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_handlerSeq(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for HandlerSeqContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_handlerSeq(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for HandlerSeqContextExt<'input>{
@@ -26162,10 +27390,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for HandlerCont
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_handler(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_handler(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for HandlerContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_handler(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for HandlerContextExt<'input>{
@@ -26282,10 +27517,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExceptionDe
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_exceptionDeclaration(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_exceptionDeclaration(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExceptionDeclarationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_exceptionDeclaration(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExceptionDeclarationContextExt<'input>{
@@ -26444,10 +27686,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ThrowExpres
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_throwExpression(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_throwExpression(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ThrowExpressionContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_throwExpression(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ThrowExpressionContextExt<'input>{
@@ -26550,10 +27799,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for ExceptionSp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_exceptionSpecification(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_exceptionSpecification(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for ExceptionSpecificationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_exceptionSpecification(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for ExceptionSpecificationContextExt<'input>{
@@ -26663,10 +27919,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for DynamicExce
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_dynamicExceptionSpecification(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_dynamicExceptionSpecification(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for DynamicExceptionSpecificationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_dynamicExceptionSpecification(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for DynamicExceptionSpecificationContextExt<'input>{
@@ -26785,10 +28048,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TypeIdListC
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_typeIdList(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_typeIdList(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TypeIdListContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_typeIdList(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TypeIdListContextExt<'input>{
@@ -26937,10 +28207,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for NoeExceptSp
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_noeExceptSpecification(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_noeExceptSpecification(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for NoeExceptSpecificationContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_noeExceptSpecification(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for NoeExceptSpecificationContextExt<'input>{
@@ -27068,10 +28345,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for TheOperator
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_theOperator(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_theOperator(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for TheOperatorContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_theOperator(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for TheOperatorContextExt<'input>{
@@ -27788,10 +29072,17 @@ impl<'input,'a> Listenable<dyn CPP14ParserListener<'input> + 'a> for LiteralCont
 		fn enter(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.enter_every_rule(self);
 			listener.enter_literal(self);
-		}fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
+		}
+		fn exit(&self,listener: &mut (dyn CPP14ParserListener<'input> + 'a)) {
 			listener.exit_literal(self);
 			listener.exit_every_rule(self);
 		}
+}
+
+impl<'input,'a> Visitable<dyn CPP14ParserVisitor<'input> + 'a> for LiteralContext<'input>{
+	fn accept(&self,visitor: &mut (dyn CPP14ParserVisitor<'input> + 'a)) {
+		visitor.visit_literal(self);
+	}
 }
 
 impl<'input> CustomRuleContext<'input> for LiteralContextExt<'input>{
